@@ -1,4 +1,4 @@
-var CACH_STATIC_NAME = "static-v7";
+var CACH_STATIC_NAME = "static-v10";
 var CACH_DYNAMIC_NAME = "dynamic-v2";
 
 self.addEventListener("install", function (event) {
@@ -10,6 +10,7 @@ self.addEventListener("install", function (event) {
     cache.addAll([
       '/',
       '/index.html',
+      '/offline.html',
       '/src/js/app.js',
       '/src/js/feed.js',
       '/src/js/promise.js',
@@ -43,6 +44,7 @@ self.addEventListener("activate", function (event) {
   return self.clients.claim();
 });
 
+// Cach with network fallback strategy
 self.addEventListener("fetch", function (event) {
   event.respondWith(
     // return the data from cache if we have it
@@ -55,13 +57,17 @@ self.addEventListener("fetch", function (event) {
         .then(function (res) {
           return caches.open(CACH_DYNAMIC_NAME)
           .then(function (cach) {
-            // cach.put(event.request.url, res.clone());
+            cach.put(event.request.url, res.clone());
             return res;
           })
         })
         .catch(function (err) {
           // console.log(err);
-        })
+          return caches.open(CACH_STATIC_NAME)
+          .then(function (cache) {
+            return cache.match('/offline.html');
+          });
+        });
       }
     })
   );
