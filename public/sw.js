@@ -45,30 +45,37 @@ self.addEventListener("activate", function (event) {
 });
 
 // Cach with network fallback strategy
+// self.addEventListener("fetch", function (event) {
+//   event.respondWith(
+//     // return the data from cache if we have it
+//     caches.match(event.request)
+//     .then(function (response) {
+//       if (response) {
+//         return response;
+//       } else {
+//         return fetch(event.request)
+//         .then(function (res) {
+//           return caches.open(CACH_DYNAMIC_NAME)
+//           .then(function (cach) {
+//             cach.put(event.request.url, res.clone());
+//             return res;
+//           })
+//         })
+//         .catch(function (err) {
+//           // console.log(err);
+//           return caches.open(CACH_STATIC_NAME)
+//           .then(function (cache) {
+//             return cache.match('/offline.html');
+//           });
+//         });
+//       }
+//     })
+//   );
+// });
+
+// Cach only strategy - [ only return data from the cache ]
 self.addEventListener("fetch", function (event) {
   event.respondWith(
-    // return the data from cache if we have it
     caches.match(event.request)
-    .then(function (response) {
-      if (response) {
-        return response;
-      } else {
-        return fetch(event.request)
-        .then(function (res) {
-          return caches.open(CACH_DYNAMIC_NAME)
-          .then(function (cach) {
-            cach.put(event.request.url, res.clone());
-            return res;
-          })
-        })
-        .catch(function (err) {
-          // console.log(err);
-          return caches.open(CACH_STATIC_NAME)
-          .then(function (cache) {
-            return cache.match('/offline.html');
-          });
-        });
-      }
-    })
   );
 });
