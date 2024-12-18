@@ -1,4 +1,4 @@
-var CACH_STATIC_NAME = "static-v10";
+var CACH_STATIC_NAME = "static-v13";
 var CACH_DYNAMIC_NAME = "dynamic-v2";
 
 self.addEventListener("install", function (event) {
@@ -42,6 +42,20 @@ self.addEventListener("activate", function (event) {
     })
   )
   return self.clients.claim();
+});
+
+// Cach then network & dynamic caching
+self.addEventListener("fetch", function (event) {
+  event.respondWith(
+    caches.open(CACH_DYNAMIC_NAME)
+    .then(function (cache) {
+      return fetch(event.request)
+      .then(function (res) {
+        cache.put(event.request, res.clone());
+        return res;
+      });
+    })
+  );
 });
 
 // Cach with network fallback strategy
@@ -88,18 +102,18 @@ self.addEventListener("activate", function (event) {
 // });
 
 // Network with cache fallback strategy
-self.addEventListener("fetch", function (event) {
-  event.respondWith(
-    fetch(event.request)
-    .then(function (res) {
-      return caches.open(CACH_DYNAMIC_NAME)
-      .then(function (cache) {
-        cache.put(event.request.url, res.clone());
-        return res;
-      })
-    })
-    .catch(function (err) {
-      return caches.match(event.request);
-    })
-  );
-});
+// self.addEventListener("fetch", function (event) {
+//   event.respondWith(
+//     fetch(event.request)
+//     .then(function (res) {
+//       return caches.open(CACH_DYNAMIC_NAME)
+//       .then(function (cache) {
+//         cache.put(event.request.url, res.clone());
+//         return res;
+//       })
+//     })
+//     .catch(function (err) {
+//       return caches.match(event.request);
+//     })
+//   );
+// });
