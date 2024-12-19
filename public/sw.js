@@ -44,18 +44,46 @@ self.addEventListener("activate", function (event) {
   return self.clients.claim();
 });
 
-// Cach then network & dynamic caching
+// Cach then network wit network fallback strategy [offline support]
 self.addEventListener("fetch", function (event) {
-  event.respondWith(
-    caches.open(CACH_DYNAMIC_NAME)
-    .then(function (cache) {
-      return fetch(event.request)
-      .then(function (res) {
-        cache.put(event.request, res.clone());
-        return res;
-      });
-    })
-  );
+  var url = "https://httpbin.org/get";
+
+  if (event.request.url.indexOf(url) > -1) {
+    event.respondWith(
+      caches.open(CACH_DYNAMIC_NAME).then(function (cache) {
+        return fetch(event.request)
+        .then(function (res) {
+          cache.put(event.request, res.clone());
+          return res;
+        });
+      })
+    );
+  } else {
+    event.respondWith(
+      // Cach with network fallback strategy
+      // return the data from cache if we have it
+      caches.match(event.request)
+      .then(function (response) {
+        if (response) {
+          return response;
+        } else {
+          return fetch(event.request)
+            .then(function (res) {
+              return caches.open(CACH_DYNAMIC_NAME).then(function (cach) {
+                cach.put(event.request.url, res.clone());
+                return res;
+              });
+            })
+            .catch(function (err) {
+              // console.log(err);
+              return caches.open(CACH_STATIC_NAME).then(function (cache) {
+                return cache.match("/offline.html");
+              });
+            });
+        }
+      })
+    );
+  }
 });
 
 // Cach with network fallback strategy
