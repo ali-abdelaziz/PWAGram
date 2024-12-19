@@ -1,5 +1,21 @@
 var CACH_STATIC_NAME = "static-v13";
 var CACH_DYNAMIC_NAME = "dynamic-v2";
+var STATIC_FILES = [
+  '/',
+  '/index.html',
+  '/offline.html',
+  '/src/js/app.js',
+  '/src/js/feed.js',
+  '/src/js/promise.js',
+  '/src/js/fetch.js',
+  '/src/js/material.min.js',
+  '/src/css/app.css',
+  '/src/css/feed.css',
+  '/src/images/main-image.jpg',
+  'https://fonts.googleapis.com/css?family=Roboto:400,700',
+  'https://fonts.googleapis.com/icon?family=Material+Icons',
+  'https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.indigo-pink.min.css',
+];
 
 self.addEventListener("install", function (event) {
   console.log("[Service worker] Installing Service Worker ...", event);
@@ -7,22 +23,7 @@ self.addEventListener("install", function (event) {
     caches.open(CACH_STATIC_NAME)
   .then(function (cache) {
     console.log("[Service worker] Precaching App Shell");
-    cache.addAll([
-      '/',
-      '/index.html',
-      '/offline.html',
-      '/src/js/app.js',
-      '/src/js/feed.js',
-      '/src/js/promise.js',
-      '/src/js/fetch.js',
-      '/src/js/material.min.js',
-      '/src/css/app.css',
-      '/src/css/feed.css',
-      '/src/images/main-image.jpg',
-      'https://fonts.googleapis.com/css?family=Roboto:400,700',
-      'https://fonts.googleapis.com/icon?family=Material+Icons',
-      'https://cdnjs.cloudflare.com/ajax/libs/material-design-lite/1.3.0/material.indigo-pink.min.css'
-    ]);
+    cache.addAll(STATIC_FILES);
   })
   )
 });
@@ -44,40 +45,47 @@ self.addEventListener("activate", function (event) {
   return self.clients.claim();
 });
 
-// Cach then network wit network fallback strategy [offline support]
-self.addEventListener("fetch", function (event) {
-  var url = "https://httpbin.org/get";
-
+// Cach then network with network fallback strategy [offline support]
+self.addEventListener('fetch', function (event) {
+  var url = 'https://httpbin.org/get';
   if (event.request.url.indexOf(url) > -1) {
     event.respondWith(
-      caches.open(CACH_DYNAMIC_NAME).then(function (cache) {
-        return fetch(event.request)
-        .then(function (res) {
-          cache.put(event.request, res.clone());
-          return res;
-        });
-      })
+      caches.open(CACHE_DYNAMIC_NAME)
+        .then(function (cache) {
+          return fetch(event.request)
+            .then(function (res) {
+              cache.put(event.request, res.clone());
+              return res;
+            });
+        })
+    );
+    // check if the request urls matches the url we want to cache in the STATIC_FILES array[]
+  } else if (new RegExp('\\b' + STATIC_FILES.join('\\b|\\b') + '\\b').test(event.request.url)) {
+    // cach only strategy
+    event.respondWith(
+      caches.match(event.request)
     );
   } else {
     event.respondWith(
       // Cach with network fallback strategy
       // return the data from cache if we have it
-      caches.match(event.request)
-      .then(function (response) {
+      caches.match(event.request).then(function (response) {
         if (response) {
           return response;
         } else {
           return fetch(event.request)
             .then(function (res) {
-              return caches.open(CACH_DYNAMIC_NAME).then(function (cach) {
-                cach.put(event.request.url, res.clone());
+              return caches.open(CACHE_DYNAMIC_NAME)
+              .then(function (cache) {
+                cache.put(event.request.url, res.clone());
                 return res;
               });
             })
             .catch(function (err) {
               // console.log(err);
-              return caches.open(CACH_STATIC_NAME).then(function (cache) {
-                if (event.request.url.indexOf('/help')) {
+              return caches.open(CACHE_STATIC_NAME)
+              .then(function (cache) {
+                if (event.request.url.indexOf("/help")) {
                   return cache.match("/offline.html");
                 }
               });
