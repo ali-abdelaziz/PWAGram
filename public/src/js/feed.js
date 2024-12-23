@@ -73,10 +73,19 @@ function createCard() {
 }
 
 // Cache then network strategy
-var url = 'https://httpbin.org/get';
+var url = 'https://httpbin.org/post';
 var networkDataReceived = false;
 
-fetch(url)
+fetch(url, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  body: JSON.stringify({
+    'message': 'Some Message, Hello from client'
+  })
+})
   .then(function(res) {
     return res.json();
   })
