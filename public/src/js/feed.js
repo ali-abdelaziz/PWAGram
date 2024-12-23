@@ -18,14 +18,14 @@ function openCreatePostModal() {
     deferredPrompt = null;
   }
   // remove (unregister) service worker on click
-  if('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations()
-    .then(function(registrations) {
-      for (var i = 0; i < registrations.length; i++) {
-        registrations[i].unregister();
-      }
-    });
-  }
+  // if('serviceWorker' in navigator) {
+  //   navigator.serviceWorker.getRegistrations()
+  //   .then(function(registrations) {
+  //     for (var i = 0; i < registrations.length; i++) {
+  //       registrations[i].unregister();
+  //     }
+  //   });
+  // }
 }
 
 function closeCreatePostModal() {
