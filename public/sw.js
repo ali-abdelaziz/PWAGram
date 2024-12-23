@@ -45,12 +45,33 @@ self.addEventListener("activate", function (event) {
   return self.clients.claim();
 });
 
+// function isInArray(string, array) {
+//   for (var i = 0; i < array.length; i++) {
+//     if (array[i] === string) {
+//       return true;
+//     }
+//   }
+//   return false;
+// }
+
+// Making route matching more precise
+function isInArray(string, array) {
+  var cachePath;
+  if (string.indexOf(self.origin) === 0) { // request targets domain where we serve the page from (i.e. NOT a CDN)
+    console.log('matched ', string);
+    cachePath = string.substring(self.origin.length); // take the part of the URL AFTER the domain (e.g. after localhost:8080)
+  } else {
+    cachePath = string; // store the full request (for CDNs)
+  }
+  return array.indexOf(cachePath) > -1;
+}
+
 // Cach then network with network fallback strategy [offline support]
 self.addEventListener('fetch', function (event) {
   var url = 'https://httpbin.org/get';
   if (event.request.url.indexOf(url) > -1) {
     event.respondWith(
-      caches.open(CACHE_DYNAMIC_NAME)
+      caches.open(CACH_DYNAMIC_NAME)
         .then(function (cache) {
           return fetch(event.request)
             .then(function (res) {
@@ -60,7 +81,7 @@ self.addEventListener('fetch', function (event) {
         })
     );
     // check if the request urls matches the url we want to cache in the STATIC_FILES array[]
-  } else if (new RegExp('\\b' + STATIC_FILES.join('\\b|\\b') + '\\b').test(event.request.url)) {
+  } else if (isInArray(event.request.url, STATIC_FILES)) {
     // cach only strategy
     event.respondWith(
       caches.match(event.request)
@@ -75,7 +96,7 @@ self.addEventListener('fetch', function (event) {
         } else {
           return fetch(event.request)
             .then(function (res) {
-              return caches.open(CACHE_DYNAMIC_NAME)
+              return caches.open(CACH_DYNAMIC_NAME)
               .then(function (cache) {
                 cache.put(event.request.url, res.clone());
                 return res;
@@ -83,9 +104,9 @@ self.addEventListener('fetch', function (event) {
             })
             .catch(function (err) {
               // console.log(err);
-              return caches.open(CACHE_STATIC_NAME)
+              return caches.open(CACH_STATIC_NAME)
               .then(function (cache) {
-                if (event.request.url.indexOf("/help")) {
+                if (event.request.headers.get('accept').includes('text/html')) {
                   return cache.match("/offline.html");
                 }
               });
